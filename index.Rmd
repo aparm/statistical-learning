@@ -1,0 +1,26 @@
+---
+title: "Statistical Machine Learning"
+author: "Aleksei Parm"
+date: "`r Sys.Date()`"
+output: rmdformats::downcute
+---
+
+# About
+
+
+# Homeworks
+
+
+## Homework 1
+
+The homework is about exploring `Carseats_mod.csv` data set.
+
+[Homework 1 page](hws/hw1/index.html)
+
+
+## Homework 2
+
+
+## Homework 3
+
+
