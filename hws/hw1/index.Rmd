@@ -1,0 +1,146 @@
+---
+title: "Homework 1"
+author: "Aleksei Parm"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::downcute:
+    code_folding: show
+---
+
+```{r, include = FALSE}
+#setwd("~/University/statistical-learning/hws/hw1") #set working directory
+```
+
+
+
+# About
+
+The homework is about exploring [`Carseats_mod.csv`](https://github.com/aparm/statistical-learning/blob/main/hws/hw1/Carseats_mod.csv) data set. 
+
+[GitHub](https://github.com/aparm/statistical-learning/tree/main/hws/hw1)
+
+
+
+# Data
+
+## Info about variables:
+
+- Sales - Unit sales (in thousands) at each location
+- CompPrice - Price charged by competitor at each location
+- Income - Community income level (in thousands of dollars)
+- Advertising - Local advertising budget for company at each location (in thousands of dollars)
+- Population - Population size in region (in thousands)
+- Price - Price company charges for car seats at each site
+- ShelveLoc - A factor with levels Bad, Good and Medium indicating the quality of the shelving location for the car seats at each site
+- Age -Average age of the local population
+- Education -Education level at each location
+- Urban - A factor with levels No and Yes to indicate whether the store is in an urban or rural location
+- US - A factor to indicate whether the store is in the US or not
+
+
+
+# Libraries
+
+```{r setup}
+#install.packages("tidyverse")
+#install.packages("GGally")
+
+library(tidyverse)
+library(GGally)
+```
+
+
+
+# Exercises:
+
+## Reading data
+
+1. Check visually the file for presence of missing values. Use `read_delim` command (indicating the symbol for missing values if needed) to read in the data set `Carseats_mod.csv`. Make sure that all variables that, according to description, should be numeric are numeric after reading data in.
+
+```{r}
+carseats = read_delim("Carseats_mod.csv", delim=",", na = c(".", "NA"))
+```
+
+> Missing values in the file are presented as `.` symbol.  
+
+<br>
+
+2. Use `summary()` function to look at summary information about variables. Do you see anything which may indicate data errors? What? How many missing values are in the data set?
+
+```{r}
+summary(carseats)
+```
+
+> There are 3 missing values in the data set.
+
+
+
+## Data cleaning
+
+3. Use `na.omit()` command to define a new data set `carseats2` where rows with missing values in the original data are left out
+
+```{r}
+carseats2 <- na.omit(carseats)
+summary(carseats2)
+```
+
+> New data set contains 397 rows
+
+<br>
+
+4. Use `select()` command to select columns `Sales` and from `Price` to `US` from `carseats2` and apply `ggpairs()` function to the the result. Are any possible data errors visible from the output?
+
+```{r message=FALSE, warning=FALSE}
+carseats2 %>%
+  select(Sales, Price:US) %>%
+  ggpairs()
+```
+
+> `US` factor has 3 different levels: `Yes`, `No`, `yes`.
+
+
+
+## Data transformation
+
+5. Use `mutate()` command with `if_else()` to correct data error in one of the factor variables, store the corrected data with the same name `carseats2`
+
+```{r}
+levels(as.factor(carseats2$US))
+
+carseats2 <- carseats2 %>%
+  mutate(US = if_else(US == "yes", "Yes", US))
+
+levels(as.factor(carseats2$US))
+```
+
+> Now `US` factor has 2 levels: `Yes`, `No`.
+
+
+
+## Summary statistics
+
+6. Use `summarize()` command from `dplyr` package to compute a table with mean sales amount for each combination of `Urban` and `ShelveLoc`
+
+```{r message=FALSE, warning=FALSE}
+carseats2 %>%
+  group_by(Urban, ShelveLoc) %>%
+  summarize(MeanSales = mean(Sales))
+```
+
+
+
+## Data visualization
+
+7. Use `ggplot()` with `geom_point` to produce a scatter plot of `Price` (on x-axis) and `Sales`, color points according to shelve location. Discuss the graph - is it showing expected relationships between variables?
+
+```{r}
+ggplot(carseats2, aes(Price, Sales, color = ShelveLoc)) +
+  geom_point()
+```
+
+> The scatter plot is showing relationships:
+>
+> - between `Price` and `Sales` (Car seats with lower price usually have more sales)
+> - between `ShelveLoc` and `Sales` (Car seats with better shelving location usually have more sales)
+
+
