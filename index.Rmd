@@ -7,6 +7,16 @@ output: rmdformats::downcute
 
 # About
 
+## Books
+
+- [An Introduction to Statistical Learning](https://www.statlearning.com/)
+- [The Elements of Statistical Learning](https://hastie.su.domains/ElemStatLearn/)
+- [R for Data Science](https://r4ds.had.co.nz/)
+
+<br>
+
+[RStudio Cheatsheets](https://www.rstudio.com/resources/cheatsheets/)
+
 
 # Homeworks
 
