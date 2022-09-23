@@ -1,0 +1,167 @@
+---
+title: "Homework 2"
+author: "Aleksei Parm"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::downcute:
+    code_folding: show
+---
+
+```{r, include = FALSE}
+#setwd("~/University/statistical-learning/hws/hw2") #set working directory
+```
+
+
+# About
+
+The homework is about fitting linear models to data and about using classical methods for classification.
+
+Homework uses real data from https://www.bondora.com/en/public-reports (just selected variables and reduced number of observations).
+
+
+
+# Libraries
+
+```{r setup, include=FALSE}
+#install.packages("tidyverse")
+
+library(tidyverse)
+library(broom)
+```
+
+Packages `tidyverse`, `broom` are loaded.
+
+
+
+# Task 1
+
+The aim is to form a model for predicting variable EAD1, which describes loss from a loan in the case of default.
+
+
+
+## Data
+
+Use the data from [`Loss.csv`](https://github.com/aparm/statistical-learning/blob/main/hws/hw2/Loss.csv).
+
+```{r}
+loss_df <- read_delim("Loss.csv", delim=",")
+head(loss_df)
+```
+
+### Info about variables
+
+- Gender - 0 Male, 1 Woman, 2 Undefined
+- NrOfDependants - Number of children or other dependants
+- Education - 1 Primary education, 2 Basic education, 3 Vocational education, 4 Secondary education, 5 Higher education
+- ExistingLiabilities - Borrower's number of existing liabilities
+- HomeOwnershipType - 0 Homeless, 1 Owner, 2 Living with parents, 3 Tenant pre-furnished property, 4 Tenant unfurnished property, 5 Council house, 6 Joint tenant, 7 Joint ownership, 8 Mortgage, 9 Owner with encumbrance, 10 Other
+- EAD1 - Exposure at default, outstanding principal at default
+
+
+Note that variables Education, Gender and HomeOwnershipType are actually nominal variables which are encoded by numbers, so before fitting models transform them to factor variables.
+
+```{r}
+loss_df <- loss_df %>%
+  mutate(
+    Education = as.factor(Education), 
+    Gender = as.factor(Gender), 
+    HomeOwnershipType = as.factor(HomeOwnershipType)
+  )
+
+head(loss_df)
+```
+
+```{r}
+summary(loss_df)
+```
+
+
+
+## Model
+
+Fit a model with all predictors for EAD1.
+
+```{r}
+model <- lm(EAD1 ~ ., data = loss_df)
+```
+
+<br>
+
+Analyze the fit - are the assumptions of computing statistics of fit satisfied?
+
+```{r}
+summary(model)
+```
+
+If we consider variables with p-value smaller than 0.05 to be significant, then numeric variables (NrOfDependants, ExistingLiabilities) are significant.
+
+Also significant differences between Gender = 0 (Male) and Gender = 2 (Undefined), Education = 1 and Education = 3 or 5, some HomeOwnershipTypes.
+
+
+
+## Accuracy
+
+What can you say about accuracy of the model compared to predicting just the average loss for
+all claim?
+
+```{r}
+knitr::kable(glance(model))
+```
+The predictions of the model are only very slightly better than predicting by average (adjusted R^2^ is 0.041), so usefulness of the model for predictions is very small.
+
+
+
+## Interaction
+
+Is it a good idea to add the interaction of Gender and Education to the model? Why?
+
+```{r}
+boxplot(EAD1 ~ Gender * Education, data=loss_df)
+```
+
+It isn't good idea, because we don't have big differences between males and females at each educational level.
+
+And we should have enough data for each group (total 15 groups).
+
+```{r}
+loss_df %>%
+  group_by(Gender, Education) %>%
+  count()
+```
+
+<br>
+
+But we can try.
+
+```{r}
+model2 <- lm(EAD1 ~ Gender * Education + NrOfDependants + ExistingLiabilities + HomeOwnershipType, data = loss_df)
+
+knitr::kable(glance(model2))
+
+knitr::kable(tidy(model2))
+```
+
+Adjusted R^2^ is 0.043 vs 0.041, but it isn't a big difference.
+
+And also p-values and standard errors of Gender2:Education2 ... Gender1:Education5 are very big.
+
+<br>
+
+I think that removing some outliers from the data set can improve the linear model more than such interaction.
+For example, NrOfDependants >= 6 and ExistingLiabilities >= 20.
+
+```{r}
+ggplot(loss_df, aes(NrOfDependants, EAD1)) + geom_point()
+
+ggplot(loss_df, aes(ExistingLiabilities, EAD1)) + geom_point()
+```
+
+<br>
+
+It also seems that union of several HomeOwnershipTypes can be useful, because some of them quite similar.
+
+```{r}
+ggplot(loss_df, aes(HomeOwnershipType, EAD1)) + geom_boxplot()
+```
+
+
