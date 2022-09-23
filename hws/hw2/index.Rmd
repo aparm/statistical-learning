@@ -24,12 +24,14 @@ Homework uses real data from https://www.bondora.com/en/public-reports (just sel
 
 ```{r setup, include=FALSE}
 #install.packages("tidyverse")
+#install.packages("tidymodels")
 
 library(tidyverse)
 library(broom)
+library(tidymodels)
 ```
 
-Packages `tidyverse`, `broom` are loaded.
+Packages `tidyverse`, `broom` and `tidymodels` are loaded.
 
 
 
@@ -164,4 +166,105 @@ It also seems that union of several HomeOwnershipTypes can be useful, because so
 ggplot(loss_df, aes(HomeOwnershipType, EAD1)) + geom_boxplot()
 ```
 
+
+
+
+
+# Task 2
+
+Use the data from [`Loan.csv`](https://github.com/aparm/statistical-learning/blob/main/hws/hw2/Loan.csv).
+
+The aim is to predict probability of default of new applications.
+
+```{r}
+loan_df_num <- read_delim("Loan.csv", delim=",")
+head(loan_df_num)
+```
+
+Note that again Education, Gender and HomeOwnershipType are actually nominal variables.
+
+```{r}
+loan_df <- loan_df_num %>%
+  mutate(
+    Education = as.factor(Education), 
+    Gender = as.factor(Gender), 
+    HomeOwnershipType = as.factor(HomeOwnershipType)
+  )
+```
+
+
+
+## Logistic regression model
+
+Fit the best logistic regression model you can find in reasonable amount of time and describe what
+you tried and why the final model is the best of the ones you compared.
+
+```{r}
+model <- glm(default ~ ., data = loan_df, family = "binomial")
+
+summary(model)
+```
+
+I tried other models, but they were even worse.
+
+<br>
+
+Produce a box plot, which shows predicted probabilities for defaulting loans and for non-defaulting loans.
+
+```{r}
+ggplot(augment(model, loan_df, type.predict="response")) + 
+  geom_boxplot(aes(x=default, y=.fitted))
+```
+
+<br>
+
+Produce confusion matrix when using the model for classification with default cutoff.
+
+```{r}
+augment(model, type.predict = "response") %>%
+  mutate(
+    truth = factor(default),
+    prediction = factor(if_else(.fitted > 0.5, TRUE, FALSE))
+  ) %>%
+  conf_mat(truth, prediction)
+```
+
+<br>
+
+Can defaulting loans be accurately predicted?
+
+NO
+
+<br>
+
+## LDA
+
+Fit LDA model to the data using all variables as numeric variables and produce box plot of
+probabilities of default for defaulting loans and non-defaulting loans.
+
+(predicted probabilities for classes can be obtained by predict(model)$posterior)
+
+```{r}
+model_LDA = MASS::lda(default ~ ., data = loan_df_num)
+
+pred = predict(model_LDA)$posterior[7142:14282]
+
+ggplot(data = loan_df_num) + geom_boxplot(aes(loan_df_num$default, pred))
+
+```
+
+<br>
+
+Compute confusion matrix for predictions of LDA model
+
+```{r}
+#predict(model_LDA)$class
+
+loan_df_num %>% 
+  mutate(
+    truth = factor(default),
+    prediction = predict(model_LDA)$class
+  ) %>% 
+  conf_mat(truth, prediction)
+```
 
